@@ -24,21 +24,6 @@ function getUserId(){
  */
 class Comments_List_Table
 {
-    /**
-     * Constructor will create the menu item
-     */
-    public function __construct()
-    {
-        add_action( 'admin_menu', array($this, 'comment_list_table_page' ));
-    }
-
-    /**
-     * Menu item will allow us to load the page to display the table
-     */
-    public function comment_list_table_page()
-    {
-        add_menu_page( 'Comments I\'ve Made', 'Comments I\'ve Made', 'manage_options', 'commentsPlugin.php', array($this, 'list_table_page') );
-    }
 
     /**
      * Display the list table page
