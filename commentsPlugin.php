@@ -217,4 +217,20 @@ class Comment_List_Table extends WP_List_Table
         }
     }
 }
+
+add_action( 'wp_dashboard_setup', 'comments_dashboard_setup' );
+function comments_dashboard_setup() {
+    wp_add_dashboard_widget(
+        'comments-dashboard-widget',
+        'Comments I\'ve Made',
+        'comments_dashboard_content',
+        $control_callback = null
+    );
+}
+
+function comments_dashboard_content() {
+		$commentListTable = new Comment_List_Table();
+        $commentListTable->prepare_items();
+		$commentListTable->display();
+}
 ?>
