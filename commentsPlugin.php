@@ -165,6 +165,8 @@ class Comment_List_Table extends WP_List_Table
 
 			$data[] = array(
 					'comment_content' => $comment->comment_content,
+					'comment_author' => $comment->comment_author,
+					'user_id' => $comment->user_id,
 					'comment_date' => $comment->comment_date,
 					'blog_title' => $wpdb->get_var($blognamequery1),
 					'post_title' => $wpdb->get_var($postnamequery1. $comment->comment_post_id),
@@ -188,9 +190,9 @@ class Comment_List_Table extends WP_List_Table
     {
         switch( $column_name ) {
 			case 'blog_title':
-				return "<a href =\"". $item["blog_url"]."\">" . $item[$column_name] . "</a>";
+				return "<a href =\"". $item["blog_url"]."\" target=\"_blank\">" . $item[$column_name] . "</a>";
 			case 'post_title':
-				return "<a href =\"".$item["post_url"]."\">" . $item[$column_name] . "</a>";
+				return "<a href =\"".$item["post_url"]."\" target=\"_blank\">" . $item[$column_name] . "</a>";
             case 'comment_content':
 				if(strlen($item[$column_name]) > 50){
 				return substr($item[$column_name],0,50)."...";
