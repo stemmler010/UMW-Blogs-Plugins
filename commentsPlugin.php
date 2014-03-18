@@ -66,7 +66,7 @@ class Comment_List_Table extends WP_List_Table
         $sortable = $this->get_sortable_columns();
 
         $data = $this->table_data();
-        //usort( $data, array( &$this, 'sort_data' ) );
+        usort( $data, array( &$this, 'sort_data' ) );
 
         $perPage = 5;
         $currentPage = $this->get_pagenum();
@@ -91,6 +91,7 @@ class Comment_List_Table extends WP_List_Table
     public function get_columns()
     {
         $columns = array(
+			'comment_author'=> "Author",
 			'blog_title' => "Blog",
 			'post_title' => "Post",
             'comment_content' => 'Comment',
@@ -117,7 +118,7 @@ class Comment_List_Table extends WP_List_Table
      */
     public function get_sortable_columns()
     {
-        return array('column_date' => array('column_date', false));
+        return array('blog_title' => array('blog_title', false), 'post_title' => array('post_title', false), 'comment_date' => array('comment_date', false), 'comment_author' => array('comment_author', false));
     }
 
 	private function table_data()
@@ -126,12 +127,12 @@ class Comment_List_Table extends WP_List_Table
 	$userId = getUserId();
 	$sqlstr = '';
 	$blog_list = wp_get_sites($args);
-	$sqlstr = "SELECT 1 as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author from ".$wpdb->base_prefix ."comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";
+	$sqlstr = "SELECT 1 as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author, user_id from ".$wpdb->base_prefix ."comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";
 	$uni = '';
 	foreach ($blog_list AS $blog) {
 		if($blog['blog_id'] != 1){
 			$uni = ' union ';
-			$sqlstr .= $uni . " SELECT ".$blog['blog_id']." as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author from ".$wpdb->base_prefix .$blog['blog_id']."_comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";                
+			$sqlstr .= $uni . " SELECT ".$blog['blog_id']." as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author, user_id from ".$wpdb->base_prefix .$blog['blog_id']."_comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";                
 		}
 	}
 	$limit = 50; //set your limit
@@ -150,6 +151,8 @@ class Comment_List_Table extends WP_List_Table
 		//echo $comment->comment_post_id;
 		if($comment->blog_id !=1){
 			$data[] = array(
+					'comment_author' => $comment->comment_author,
+					'user_id' => $comment->user_id,
 					'comment_content' => $comment->comment_content,
 					'comment_date' => $comment->comment_date,
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"blogname\""),
@@ -197,9 +200,44 @@ class Comment_List_Table extends WP_List_Table
 				}
             case 'comment_date':
                 return $item[$column_name];
+		    case 'comment_author':
+				return get_avatar($item[user_id], 20)." " . $item[$column_name];
             default:
                 return print_r( $item, true ) ;
         }
+    }
+	 /**
+     * Allows you to sort the data by the variables set in the $_GET
+     *
+     * @return Mixed
+     */
+    private function sort_data( $a, $b )
+    {
+        // Set defaults
+        $orderby = 'blog_title';
+        $order = 'asc';
+ 
+        // If orderby is set, use this as the sort column
+        if(!empty($_GET['orderby']))
+        {
+            $orderby = $_GET['orderby'];
+        }
+ 
+        // If order is set use this as the order
+        if(!empty($_GET['order']))
+        {
+            $order = $_GET['order'];
+        }
+ 
+ 
+        $result = strcmp( $a[$orderby], $b[$orderby] );
+ 
+        if($order === 'asc')
+        {
+            return $result;
+        }
+ 
+        return -$result;
     }
 }
 
