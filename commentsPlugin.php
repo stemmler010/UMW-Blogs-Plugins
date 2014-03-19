@@ -148,13 +148,16 @@ class Comment_List_Table extends WP_List_Table
 	$data = array();
 	
 	foreach($comm_list as $comment){
-		//echo $comment->comment_post_id;
+		//echo ($comment->comment_date_gmt);
+		//echo ($comment->comment_date);
+		//echo ('\'' .$comment-> comment_date_gmt. '\'');
+		//echo (strtotime($comment->comment_date_gmt));
 		if($comment->blog_id !=1){
 			$data[] = array(
 					'comment_author' => $comment->comment_author,
 					'user_id' => $comment->user_id,
 					'comment_content' => $comment->comment_content,
-					'comment_date' => $comment->comment_date,
+					'comment_date' => date_i18n( get_option( 'date_format' ). " " .get_option('time_format'), strtotime($comment->comment_date_gmt) ),
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"blogname\""),
 					'post_title' => $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = ". $comment->comment_post_id),
 					'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"siteurl\""),
@@ -167,7 +170,7 @@ class Comment_List_Table extends WP_List_Table
 					'comment_content' => $comment->comment_content,
 					'comment_author' => $comment->comment_author,
 					'user_id' => $comment->user_id,
-					'comment_date' => $comment->comment_date,
+					'comment_date' => date_i18n( get_option( 'date_format' ). " " .get_option('time_format'), strtotime($comment->comment_date_gmt) ),
 					'blog_title' => $wpdb->get_var($blognamequery1),
 					'post_title' => $wpdb->get_var($postnamequery1. $comment->comment_post_id),
 					'blog_url' => $wpdb->get_var($blogurlquery1),
@@ -175,6 +178,7 @@ class Comment_List_Table extends WP_List_Table
 					);
 				}
 			}
+			echo(strtotime('\''.$comment->comment_date.'\''));
 	return $data;
 	}
 
