@@ -81,6 +81,7 @@ class Comment_List_Table extends WP_List_Table
 
         $this->_column_headers = array($columns, $hidden, $sortable);
         $this->items = $data;
+	
     }
 
     /**
@@ -161,7 +162,9 @@ class Comment_List_Table extends WP_List_Table
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"blogname\""),
 					'post_title' => $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = ". $comment->comment_post_id),
 					'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"siteurl\""),
-					'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = " . $comment->comment_post_id)
+					'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = " . $comment->comment_post_id),
+					'ID' => $comment->comment_id,
+					'blog_id' => $comment->blog_id
 					);
 		}
 	    else{
@@ -174,7 +177,9 @@ class Comment_List_Table extends WP_List_Table
 					'blog_title' => $wpdb->get_var($blognamequery1),
 					'post_title' => $wpdb->get_var($postnamequery1. $comment->comment_post_id),
 					'blog_url' => $wpdb->get_var($blogurlquery1),
-					'post_url' => $wpdb->get_var($posturlquery1. $comment->comment_post_id)
+					'post_url' => $wpdb->get_var($posturlquery1. $comment->comment_post_id),
+					'ID' => $comment->comment_id,
+					'blog_id'=> $comment->blog_id
 					);
 				}
 			}
@@ -182,6 +187,53 @@ class Comment_List_Table extends WP_List_Table
 	return $data;
 	}
 
+	
+	    /** ************************************************************************
+     * This is a custom column method and is responsible for what
+     * is rendered in any column with a name/slug of 'Comment'. Every time the class
+     * 
+     * If the user has the proper permissions to edit and trash a comment, the actions
+     * will appear in the column. However, if they do not have permission, only the
+     * comment contents will show in the column.
+     * 
+     * 
+     * @see WP_List_Table::::single_row_columns()
+     * @param array $item A singular item (one full row's worth of data)
+     * @return string Text to be placed inside the column <td> 
+     **************************************************************************/
+    function column_comment_content($item){
+        $nonce = wp_create_nonce('delete-comment_' . $item['ID']);
+		
+        //Build row actions
+        $actions = array(
+            'edit'      => sprintf('<a href="'. $item['blog_url']. '/wp-admin/comment.php?action=%s&c=%s">Edit</a>','editcomment',$item['ID']),
+            'delete'    => sprintf('<a href="'. $item['blog_url']. '/wp-admin/comment.php?c=%s&action=%s&_wpnonce=%s">Trash</a>',$item['ID'],'trashcomment', $nonce),
+        );
+        
+        //Return the title contents
+		if(current_user_can_for_blog($item['blog_id'], 'moderate_comments')){
+			if(strlen($item['comment_content']) > 50){
+				return sprintf('%1$s %2$s',
+				/*$1%s*/ substr($item['comment_content'],0,50)."...",
+				/*$2%s*/ $this->row_actions($actions)
+				);
+			}
+			if(strlen($item['column_content'])<50){
+				return sprintf('%1$s %2$s',
+				/*$1%s*/ $item['comment_content'],
+				/*$2%s*/ $this->row_actions($actions)
+				);
+			}
+		}
+		else{
+			if(strlen($item['comment_content']) > 50){
+				return substr($item['comment_content'],0,50)."...";
+			}
+			if(strlen($item['column_content'])<50){
+				return $item['comment_content'];
+			}
+		}
+	}
     /**
      * Define what data to show on each column of the table
      *
@@ -260,6 +312,9 @@ function comments_dashboard_setup() {
 function comments_dashboard_content() {
 		$commentListTable = new Comment_List_Table();
         $commentListTable->prepare_items();
+		//while(true){
 		$commentListTable->display();
+		//usleep(300000000);
+		//}
 }
 ?>
