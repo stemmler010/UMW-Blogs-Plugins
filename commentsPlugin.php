@@ -5,19 +5,18 @@
  * Author: Josh Stemmler (Paul Underwood, initial template
  * Version: 1.0
  */
+ 
+ date_default_timezone_set(get_option('timezone_string'));
 
 if(is_admin())
 {
     new Comments_List_Table();
+	if( ! function_exists('getUserId') ){
+	include(ABSPATH . 'wp-content/plugins/sharedFunctions.php' );
+	}
 }
 
-function getUserId(){
-	if(!function_exists('wp_get_current_user'))
-	    require_once(ABSPATH . "wp-includes/pluggable.php"); 
-	wp_cookie_constants();
-	$current_user = wp_get_current_user();
-	return $current_user->user_login;
-}
+
 
 /**
  * Comments_List_Table class will create the page to load the table
