@@ -87,8 +87,8 @@ class Activity_View_Table extends WP_List_Table
     {
         $columns = array(
 			'blog_title' => "Blog",
-			'activity_author' => "Activity Author"
-            'recent_activity' => "Recent Activity",
+			'activity_author' => "Activity Author",
+            'recent_activity' => 'Recent Activity',
             'comment_date' => 'Date',
         );
 
@@ -134,6 +134,8 @@ class Activity_View_Table extends WP_List_Table
 	$sqlstr .= " ORDER BY comment_date_gmt desc " . $limit; 
 	//echo($sqlstr);
 	//echo($current_user->user_login);
+	$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix ."links";
+	//echo($linkquery);
 	$comm_list = $wpdb->get_results($sqlstr);
 	$blognamequery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"blogname\"";
 	$postnamequery1 = "SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = {$comment->comment_post_id}";
