@@ -86,10 +86,9 @@ class Activity_View_Table extends WP_List_Table
     public function get_columns()
     {
         $columns = array(
-			'blog_author' => "Blog Author",
 			'blog_title' => "Blog",
-			'post_title' => "Post",
-            'comment_content' => 'Comment',
+			'activity_author' => "Activity Author"
+            'recent_activity' => "Recent Activity",
             'comment_date' => 'Date',
         );
 
@@ -113,7 +112,7 @@ class Activity_View_Table extends WP_List_Table
      */
     public function get_sortable_columns()
     {
-        return array('blog_author' => array('blog_author', false), 'blog_title' => array('blog_title', false), 'post_title' => array('post_title', false), 'comment_date' => array('comment_date', false), 'comment_author' => array('comment_author', false));
+        return array('activity_author' => array('activity_author', false), 'blog_title' => array('blog_title', false), 'comment_date' => array('comment_date', false));
     }
 
 	private function table_data()
