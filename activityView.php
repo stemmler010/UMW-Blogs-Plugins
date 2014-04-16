@@ -132,10 +132,28 @@ class Activity_View_Table extends WP_List_Table
 	$limit = 50; //set your limit
 	$limit = ' LIMIT 0, '. $limit;
 	$sqlstr .= " ORDER BY comment_date_gmt desc " . $limit; 
-	//echo($sqlstr);
-	//echo($current_user->user_login);
+
 	$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix ."links";
-	//echo($linkquery);
+	$domainPathQuery = "SELECT domain, path FROM " . $wpdb->base_prefix . "blogs";
+	$domainPath = $wpdb->get_results($domainPathQuery);
+	$link_list = $wpdb->get_results($linkquery);
+
+
+	foreach($link_list as $link){
+		foreach($domainPath as $paths) {
+			$url = $paths->domain . $paths->path;
+			$url = substr($link->link_url,20);
+			$matchQuery = "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE path = \"{$url}\"";
+			$match = $wpdb->get_results($matchQuery);
+			foreach($match as $linkMatch) {
+				//echo("blogid = " . $linkMatch->blog_id);
+			}
+		}
+	}
+	
+
+		
+	
 	$comm_list = $wpdb->get_results($sqlstr);
 	$blognamequery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"blogname\"";
 	$postnamequery1 = "SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = {$comment->comment_post_id}";
