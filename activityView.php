@@ -88,6 +88,7 @@ class Activity_View_Table extends WP_List_Table
         $columns = array(
 			'blog_title' => "Blog",
 			'activity_author' => "Activity Author",
+			'post_title' => "Post Title",
             'recent_activity' => 'Recent Activity',
             'comment_date' => 'Date',
         );
@@ -112,7 +113,7 @@ class Activity_View_Table extends WP_List_Table
      */
     public function get_sortable_columns()
     {
-        return array('activity_author' => array('activity_author', false), 'blog_title' => array('blog_title', false), 'comment_date' => array('comment_date', false));
+        return array('activity_author' => array('activity_author', false), 'post_title' => array('post_title', false), 'blog_title' => array('blog_title', false), 'comment_date' => array('comment_date', false));
     }
 
 	private function table_data()
@@ -180,29 +181,27 @@ class Activity_View_Table extends WP_List_Table
 	$limit = 50; //set your limit
 	$limit = ' LIMIT 0, '. $limit;
 	$postsQuery .= " ORDER BY date desc " . $limit; 
-	//echo($postsQuery);
 	$activities = $wpdb->get_results($postsQuery);
-	//echo("size = " . count($activities));
-//	foreach($activities as $act) {
-//		echo($act->type . "....");
-//	}
 	
 	$blogurlquery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"siteurl\"";
 	$posturlquery1 = "SELECT guid FROM ". $wpdb->base_prefix . "posts WHERE ID = {$activity->comment_post_id}";
+	
 	$data = array();
-echo($activity->comment_post_id);
 	foreach($activities as $activity){
-//		if($activity->type == "post") {
-//			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_content = \"{$activity->content}\"");
-//			echo $title;
-//		} else {
-//			$title = $wpdb->get_var("SELECT comment_post_ID FROM ". %wpdbp.post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts p");
-//		}
+		if($activity->type == "post") {
+			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_modified_gmt = \"{$activity->date}\"");
+		} else {
+			$id = $wpdb->get_var("SELECT comment_post_ID FROM ". $wpdb->base_prefix . $activity->blog_id . "_comments WHERE comment_content = \"{$activity->content}\"");
+			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = {$id}");
+		}
 		if($activity->blog_id !=1){
 			$data[] = array(
 					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
 					'comment_date' => $activity->date,
+					'post_title' => $title,
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"blogname\""),
+					'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"siteurl\""),
+					'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_title = \"{$title}\""),
 					'activity_author' => $activity->author
 					);
 		}
@@ -212,19 +211,14 @@ echo($activity->comment_post_id);
 					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
 					'comment_date' => $activity->date,				
 					'blog_title' => $wpdb->get_var($blognamequery1),
-					'post_title' => $wpdb->get_var($postnamequery1. $activity->comment_post_id),
+					'post_title' => $title,
 					'blog_url' => $wpdb->get_var($blogurlquery1),
 					'post_url' => $wpdb->get_var($posturlquery1. $activity->comment_post_id)
 					);
 				}
 	}
-//print_r($data);
 	return $data;
 	}
-//	,
-					//'post_title' => $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = ". $activity->comment_post_id),
-					//'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"siteurl\""),
-					//'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = " . $activity->comment_post_id)
 
     /**
      * Define what data to show on each column of the table
@@ -240,11 +234,10 @@ echo($activity->comment_post_id);
 			case 'activity_author':
 				return $item[$column_name];
 			case 'blog_title':
-				return "<a href =\"". $item["blog_url"]."\">" . $item[$column_name] . "</a>";
+				return "<a href =\"". $item["blog_url"]."\" target=\"_blank\">" . $item[$column_name] . "</a>";
 			case 'post_title':
-				return "<a href =\"".$item["post_url"]."\">" . $item[$column_name] . "</a>";
+				return "<a href =\"".$item["post_url"]."\" target=\"_blank\">" . $item[$column_name] . "</a>";
             case 'recent_activity':
-				//echo($item[$column_name]);
 				if(strlen($item[$column_name]) > 50){
 				return substr($item[$column_name],0,100)."...";
 				}
