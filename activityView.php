@@ -64,7 +64,7 @@ class Activity_View_Table extends WP_List_Table
         $data = $this->table_data();
         usort( $data, array( &$this, 'sort_data' ) );
 
-        $perPage = 25;
+        $perPage = 10;
         $currentPage = $this->get_pagenum();
         $totalItems = count($data);
 
@@ -162,31 +162,36 @@ class Activity_View_Table extends WP_List_Table
 	// gets all comments
 	foreach($match as $blogids){
 		if($first == 1){
-			$postsQuery = "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author FROM wp_".$blogids->blog_id."_comments";
+			$postsQuery = "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author, (SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = comment_post_id) AS postTitle, (SELECT guid FROM ". $wpdb->base_prefix ."posts WHERE ID = comment_post_id) AS url FROM wp_comments";
 			$uni = '';
 			$first = 0;
 		}
 		else{
 			$uni = ' UNION ';
-			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_".$blogids->blog_id."_comments";
+			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author,(SELECT post_title FROM ". $wpdb->base_prefix.$blogids->blog_id."posts WHERE ID = comment_post_id) AS postTitle, (SELECT guid FROM ". $wpdb->base_prefix.$blogids->blog_id ."posts WHERE ID = comment_post_id) AS url  from".$wpdb->base_prefix.$blogids->blog_id."_comments";
 		}
 	}
 	//gets all posts
 	foreach($match as $blogids){
 		if($blogids->blog_id == 1){
-			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author FROM wp_posts WHERE post_status = \"publish\"";
+			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM ".$wpdb->base_prefix."users where id = post_author) as author, post_title AS postTitle, guid AS url FROM ".$wpdb->base_prefix."posts WHERE post_status = \"publish\"";
 		}
 		else{
-			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author FROM wp_".$blogids->blog_id."_posts WHERE post_status = \"publish\"";
+			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author, post_title AS postTitle, guid AS url FROM".$wpdb->base_prefix.$blogids->blog_id."_posts WHERE post_status = \"publish\"";
 		}
 	}
 	$limit = 50; //set your limit
 	$limit = ' LIMIT 0, '. $limit;
 	$postsQuery .= " ORDER BY date desc " . $limit; 
+	//echo($postsQuery);
 	$activities = $wpdb->get_results($postsQuery);
 	
+	$blognamequery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"blogname\"";
+	$postnamequery1 = "SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = {$comment->comment_post_id}";
 	$blogurlquery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"siteurl\"";
-	$posturlquery1 = "SELECT guid FROM ". $wpdb->base_prefix . "posts WHERE ID = {$activity->comment_post_id}";
+
+	
+	
 	
 	$data = array();
 	foreach($activities as $activity){
@@ -194,30 +199,32 @@ class Activity_View_Table extends WP_List_Table
 			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_modified_gmt = \"{$activity->date}\"");
 		} else {
 			$id = $wpdb->get_var("SELECT comment_post_ID FROM ". $wpdb->base_prefix . $activity->blog_id . "_comments WHERE comment_content = \"{$activity->content}\"");
-			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = {$id}");
+			//$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix .$activity->blog_id."_posts WHERE ID = {$comment->comment_post_id}");
 		}
 		if($activity->blog_id !=1){
 			$data[] = array(
+					'activity_author' => $activity->author,
 					'recent_activity' => $activity->content,
 					'activity_type' => strtoupper($activity->type),
-					'comment_date' => $activity->date,
-					'post_title' => $title,
+					'comment_date' => date_i18n( get_option( 'date_format' ). " " .get_option('time_format'), strtotime($activity->date) ),
+					'post_title' => $activity->postTitle,
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"blogname\""),
 					'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"siteurl\""),
-					'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_title = \"{$title}\""),
+					'post_url' => $activity->url,
 					'activity_author' => $activity->author
 					);
 		}
 	    else{
 
 			$data[] = array(
+					'activity_author' => $activity->author,
 					'recent_activity' => $activity->content,
 					'activity_type' => strtoupper($activity->type),
-					'comment_date' => $activity->date,				
+					'comment_date' => date_i18n( get_option( 'date_format' ). " " .get_option('time_format'), strtotime($activity->date) ),				
 					'blog_title' => $wpdb->get_var($blognamequery1),
-					'post_title' => $title,
+					'post_title' => $activity->postTitle,
 					'blog_url' => $wpdb->get_var($blogurlquery1),
-					'post_url' => $wpdb->get_var($posturlquery1. $id)
+					'post_url' => $activity->url
 					);
 				}
 	}
