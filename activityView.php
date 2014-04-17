@@ -75,7 +75,7 @@ class Activity_View_Table extends WP_List_Table
         $data = array_slice($data,(($currentPage-1)*$perPage),$perPage);
 
         $this->_column_headers = array($columns, $hidden, $sortable);
-        //$this->items = $data;
+        $this->items = $data;
     }
 
     /**
@@ -119,27 +119,14 @@ class Activity_View_Table extends WP_List_Table
     {
 	global $wpdb;
 	$userId = getUserId();
-	$sqlstr = '';
-	$blog_list = wp_get_sites($args);
-	$sqlstr = "SELECT 1 as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author from ".$wpdb->base_prefix ."comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";
-	$uni = '';
-	foreach ($blog_list AS $blog) {
-		if($blog['blog_id'] != 1){
-			$uni = ' union ';
-			$sqlstr .= $uni . " SELECT ".$blog['blog_id']." as blog_id, comment_date, comment_id, comment_post_id, comment_content, comment_date_gmt, comment_author from ".$wpdb->base_prefix .$blog['blog_id']."_comments where comment_approved = 1 AND comment_author = \"". $userId . "\"";                
-		}
-	}
-	$limit = 50; //set your limit
-	$limit = ' LIMIT 0, '. $limit;
-	$sqlstr .= " ORDER BY comment_date_gmt desc " . $limit; 
 		
 	if(get_current_blog_id() == 1){
 		$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix ."links";
 	}
 	else{
 		$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix. get_current_blog_id() ."_links";
-		//echo($linkquery);
-		}
+
+	}
 	$domainPathQuery = "SELECT domain, path FROM " . $wpdb->base_prefix . "blogs";
 	$domainPath = $wpdb->get_results($domainPathQuery);
 	$link_list = $wpdb->get_results($linkquery);
@@ -148,27 +135,22 @@ class Activity_View_Table extends WP_List_Table
 	foreach($link_list as $link){
 		foreach($domainPath as $paths) {
 			$url = "http://".$paths->domain . $paths->path;
-			//$url = substr($link->link_url,20);
-			//echo ($url."\n");
-			//echo ($link->link_url."\n");
 			if(substr($link->link_url, -1) != "/"){
 				$compUrl = $link->link_url."/";
 			}
 			else{
 				$compUrl = $link->link_url;
-				}
-				
-			if ($url == $compUrl){
-			if( $first == 1){
-			$matchQuery = "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
-			$uni = '';
-			$first = 0;
 			}
-			else{
-				$uni = ' union ';
-				$matchQuery .= $uni . "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
+			if ($url == $compUrl){
+				if( $first == 1){
+					$matchQuery = "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
+					$uni = '';
+					$first = 0;
 				}
-			//echo($matchQuery);
+				else{
+					$uni = ' union ';
+					$matchQuery .= $uni . "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
+				}
 			}
 		}
 	}
@@ -177,13 +159,13 @@ class Activity_View_Table extends WP_List_Table
 	// gets all comments
 	foreach($match as $blogids){
 		if($first == 1){
-			$postsQuery = "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_site_comments WHERE blog_id = ".$blogids->blog_id;
+			$postsQuery = "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author FROM wp_".$blogids->blog_id."_comments";
 			$uni = '';
 			$first = 0;
 		}
 		else{
-			$uni = ' union ';
-			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_sites_comments WHERE blog_id = ".$blogids->blog_id;
+			$uni = ' UNION ';
+			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_".$blogids->blog_id."_comments";
 		}
 	}
 	//gets all posts
@@ -198,43 +180,51 @@ class Activity_View_Table extends WP_List_Table
 	$limit = 50; //set your limit
 	$limit = ' LIMIT 0, '. $limit;
 	$postsQuery .= " ORDER BY date desc " . $limit; 
-	echo($postsQuery);
-	$activity = $wpdb->get_results($postsQuery);
-
-
-	$comm_list = $wpdb->get_results($sqlstr);
-	$blognamequery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"blogname\"";
-	$postnamequery1 = "SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = {$comment->comment_post_id}";
+	//echo($postsQuery);
+	$activities = $wpdb->get_results($postsQuery);
+	//echo("size = " . count($activities));
+//	foreach($activities as $act) {
+//		echo($act->type . "....");
+//	}
+	
 	$blogurlquery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"siteurl\"";
-	$posturlquery1 = "SELECT guid FROM ". $wpdb->base_prefix . "posts WHERE ID = {$comment->comment_post_id}";
+	$posturlquery1 = "SELECT guid FROM ". $wpdb->base_prefix . "posts WHERE ID = {$activity->comment_post_id}";
 	$data = array();
-
-	foreach($comm_list as $comment){
-		//echo $comment->comment_post_id;
-		if($comment->blog_id !=1){
+echo($activity->comment_post_id);
+	foreach($activities as $activity){
+//		if($activity->type == "post") {
+//			$title = $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE post_content = \"{$activity->content}\"");
+//			echo $title;
+//		} else {
+//			$title = $wpdb->get_var("SELECT comment_post_ID FROM ". %wpdbp.post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts p");
+//		}
+		if($activity->blog_id !=1){
 			$data[] = array(
-					'comment_content' => $comment->comment_content,
-					'comment_date' => $comment->comment_date,
-					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"blogname\""),
-					'post_title' => $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = ". $comment->comment_post_id),
-					'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $comment->blog_id . "_options WHERE option_name = \"siteurl\""),
-					'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $comment->blog_id . "_posts WHERE ID = " . $comment->comment_post_id)
+					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
+					'comment_date' => $activity->date,
+					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"blogname\""),
+					'activity_author' => $activity->author
 					);
 		}
 	    else{
 
 			$data[] = array(
-					'comment_content' => $comment->comment_content,
-					'comment_date' => $comment->comment_date,
+					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
+					'comment_date' => $activity->date,				
 					'blog_title' => $wpdb->get_var($blognamequery1),
-					'post_title' => $wpdb->get_var($postnamequery1. $comment->comment_post_id),
+					'post_title' => $wpdb->get_var($postnamequery1. $activity->comment_post_id),
 					'blog_url' => $wpdb->get_var($blogurlquery1),
-					'post_url' => $wpdb->get_var($posturlquery1. $comment->comment_post_id)
+					'post_url' => $wpdb->get_var($posturlquery1. $activity->comment_post_id)
 					);
 				}
-			}
+	}
+//print_r($data);
 	return $data;
 	}
+//	,
+					//'post_title' => $wpdb->get_var("SELECT post_title FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = ". $activity->comment_post_id),
+					//'blog_url' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"siteurl\""),
+					//'post_url' => $wpdb->get_var("SELECT guid FROM ". $wpdb->base_prefix . $activity->blog_id . "_posts WHERE ID = " . $activity->comment_post_id)
 
     /**
      * Define what data to show on each column of the table
@@ -247,15 +237,16 @@ class Activity_View_Table extends WP_List_Table
     public function column_default( $item, $column_name )
     {
         switch( $column_name ) {
-			case 'blog_author':
-				return;
+			case 'activity_author':
+				return $item[$column_name];
 			case 'blog_title':
 				return "<a href =\"". $item["blog_url"]."\">" . $item[$column_name] . "</a>";
 			case 'post_title':
 				return "<a href =\"".$item["post_url"]."\">" . $item[$column_name] . "</a>";
-            case 'comment_content':
+            case 'recent_activity':
+				//echo($item[$column_name]);
 				if(strlen($item[$column_name]) > 50){
-				return substr($item[$column_name],0,50)."...";
+				return substr($item[$column_name],0,100)."...";
 				}
 				if(strlen($item[$column_name])<50){
 				return $item[$column_name];
