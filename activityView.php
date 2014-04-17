@@ -168,7 +168,7 @@ class Activity_View_Table extends WP_List_Table
 		}
 		else{
 			$uni = ' UNION ';
-			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author,(SELECT post_title FROM ". $wpdb->base_prefix.$blogids->blog_id."posts WHERE ID = comment_post_id) AS postTitle, (SELECT guid FROM ". $wpdb->base_prefix.$blogids->blog_id ."posts WHERE ID = comment_post_id) AS url  from".$wpdb->base_prefix.$blogids->blog_id."_comments";
+			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author,(SELECT post_title FROM ". $wpdb->base_prefix.$blogids->blog_id."_posts WHERE ID = comment_post_id) AS postTitle, (SELECT guid FROM ". $wpdb->base_prefix.$blogids->blog_id ."_posts WHERE ID = comment_post_id) AS url  FROM ".$wpdb->base_prefix.$blogids->blog_id."_comments";
 		}
 	}
 	//gets all posts
@@ -177,7 +177,7 @@ class Activity_View_Table extends WP_List_Table
 			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM ".$wpdb->base_prefix."users where id = post_author) as author, post_title AS postTitle, guid AS url FROM ".$wpdb->base_prefix."posts WHERE post_status = \"publish\"";
 		}
 		else{
-			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author, post_title AS postTitle, guid AS url FROM".$wpdb->base_prefix.$blogids->blog_id."_posts WHERE post_status = \"publish\"";
+			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author, post_title AS postTitle, guid AS url FROM ".$wpdb->base_prefix.$blogids->blog_id."_posts WHERE post_status = \"publish\"";
 		}
 	}
 	$limit = 50; //set your limit
