@@ -1,3 +1,4 @@
+<meta http-equiv="refresh" content="300">
 <?php
 /*
  * Plugin Name: Comments I've Made

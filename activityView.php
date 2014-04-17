@@ -1,3 +1,4 @@
+<meta http-equiv="refresh" content="300">
 <?php
 /*
  * Plugin Name: Activity of Links
@@ -87,9 +88,10 @@ class Activity_View_Table extends WP_List_Table
     {
         $columns = array(
 			'blog_title' => "Blog",
-			'activity_author' => "Activity Author",
 			'post_title' => "Post Title",
-            'recent_activity' => 'Recent Activity',
+			'activity_author' => "Activity Author",
+			'activity_type' => "Activity Type",
+            'recent_activity' => 'Activity Content',
             'comment_date' => 'Date',
         );
 
@@ -113,7 +115,7 @@ class Activity_View_Table extends WP_List_Table
      */
     public function get_sortable_columns()
     {
-        return array('activity_author' => array('activity_author', false), 'post_title' => array('post_title', false), 'blog_title' => array('blog_title', false), 'comment_date' => array('comment_date', false));
+        return array('activity_author' => array('activity_author', false), 'activity_type' => array('activity_type', false), 'post_title' => array('post_title', false), 'blog_title' => array('blog_title', false), 'comment_date' => array('comment_date', false));
     }
 
 	private function table_data()
@@ -196,7 +198,8 @@ class Activity_View_Table extends WP_List_Table
 		}
 		if($activity->blog_id !=1){
 			$data[] = array(
-					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
+					'recent_activity' => $activity->content,
+					'activity_type' => strtoupper($activity->type),
 					'comment_date' => $activity->date,
 					'post_title' => $title,
 					'blog_title' => $wpdb->get_var("SELECT option_value FROM ". $wpdb->base_prefix . $activity->blog_id . "_options WHERE option_name = \"blogname\""),
@@ -208,12 +211,13 @@ class Activity_View_Table extends WP_List_Table
 	    else{
 
 			$data[] = array(
-					'recent_activity' => strtoupper($activity->type).": ".$activity->content,
+					'recent_activity' => $activity->content,
+					'activity_type' => strtoupper($activity->type),
 					'comment_date' => $activity->date,				
 					'blog_title' => $wpdb->get_var($blognamequery1),
 					'post_title' => $title,
 					'blog_url' => $wpdb->get_var($blogurlquery1),
-					'post_url' => $wpdb->get_var($posturlquery1. $activity->comment_post_id)
+					'post_url' => $wpdb->get_var($posturlquery1. $id)
 					);
 				}
 	}
@@ -232,6 +236,8 @@ class Activity_View_Table extends WP_List_Table
     {
         switch( $column_name ) {
 			case 'activity_author':
+				return $item[$column_name];
+			case 'activity_type':
 				return $item[$column_name];
 			case 'blog_title':
 				return "<a href =\"". $item["blog_url"]."\" target=\"_blank\">" . $item[$column_name] . "</a>";
