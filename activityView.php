@@ -132,35 +132,83 @@ class Activity_View_Table extends WP_List_Table
 	$limit = 50; //set your limit
 	$limit = ' LIMIT 0, '. $limit;
 	$sqlstr .= " ORDER BY comment_date_gmt desc " . $limit; 
-
-	$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix ."links";
+		
+	if(get_current_blog_id() == 1){
+		$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix ."links";
+	}
+	else{
+		$linkquery = "SELECT link_url FROM ". $wpdb->base_prefix. get_current_blog_id() ."_links";
+		//echo($linkquery);
+		}
 	$domainPathQuery = "SELECT domain, path FROM " . $wpdb->base_prefix . "blogs";
 	$domainPath = $wpdb->get_results($domainPathQuery);
 	$link_list = $wpdb->get_results($linkquery);
-
-
+	
+	$first = 1;
 	foreach($link_list as $link){
 		foreach($domainPath as $paths) {
-			$url = $paths->domain . $paths->path;
-			$url = substr($link->link_url,20);
-			$matchQuery = "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE path = \"{$url}\"";
-			$match = $wpdb->get_results($matchQuery);
-			foreach($match as $linkMatch) {
-				//echo("blogid = " . $linkMatch->blog_id);
+			$url = "http://".$paths->domain . $paths->path;
+			//$url = substr($link->link_url,20);
+			//echo ($url."\n");
+			//echo ($link->link_url."\n");
+			if(substr($link->link_url, -1) != "/"){
+				$compUrl = $link->link_url."/";
+			}
+			else{
+				$compUrl = $link->link_url;
+				}
+				
+			if ($url == $compUrl){
+			if( $first == 1){
+			$matchQuery = "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
+			$uni = '';
+			$first = 0;
+			}
+			else{
+				$uni = ' union ';
+				$matchQuery .= $uni . "SELECT blog_id FROM " . $wpdb->base_prefix . "blogs  WHERE domain = \"{$paths->domain}\" AND path = \"{$paths->path}\"";
+				}
+			//echo($matchQuery);
 			}
 		}
 	}
-	
+	$match = $wpdb->get_results($matchQuery);
+	$first = 1;
+	// gets all comments
+	foreach($match as $blogids){
+		if($first == 1){
+			$postsQuery = "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_site_comments WHERE blog_id = ".$blogids->blog_id;
+			$uni = '';
+			$first = 0;
+		}
+		else{
+			$uni = ' union ';
+			$postsQuery .= $uni . "SELECT ".$blogids->blog_id. " as blog_id, \"comment\" as type, comment_content as content, comment_date_gmt AS date, comment_author AS author from wp_sites_comments WHERE blog_id = ".$blogids->blog_id;
+		}
+	}
+	//gets all posts
+	foreach($match as $blogids){
+		if($blogids->blog_id == 1){
+			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author FROM wp_posts WHERE post_status = \"publish\"";
+		}
+		else{
+			$postsQuery .= " UNION SELECT " . $blogids->blog_id . " as blog_id, \"post\" as type, post_content as content, post_modified_gmt AS date, (SELECT user_login FROM wp_users where id = post_author) as author FROM wp_".$blogids->blog_id."_posts WHERE post_status = \"publish\"";
+		}
+	}
+	$limit = 50; //set your limit
+	$limit = ' LIMIT 0, '. $limit;
+	$postsQuery .= " ORDER BY date desc " . $limit; 
+	echo($postsQuery);
+	$activity = $wpdb->get_results($postsQuery);
 
-		
-	
+
 	$comm_list = $wpdb->get_results($sqlstr);
 	$blognamequery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"blogname\"";
 	$postnamequery1 = "SELECT post_title FROM ". $wpdb->base_prefix ."posts WHERE ID = {$comment->comment_post_id}";
 	$blogurlquery1 = "SELECT option_value FROM ". $wpdb->base_prefix . "options WHERE option_name = \"siteurl\"";
 	$posturlquery1 = "SELECT guid FROM ". $wpdb->base_prefix . "posts WHERE ID = {$comment->comment_post_id}";
 	$data = array();
-	
+
 	foreach($comm_list as $comment){
 		//echo $comment->comment_post_id;
 		if($comment->blog_id !=1){
@@ -218,7 +266,7 @@ class Activity_View_Table extends WP_List_Table
                 return print_r( $item, true ) ;
         }
     }
-	
+
 		 /**
      * Allows you to sort the data by the variables set in the $_GET
      *

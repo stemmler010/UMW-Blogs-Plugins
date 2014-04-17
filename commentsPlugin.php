@@ -201,30 +201,7 @@ class Comment_List_Table extends WP_List_Table
      * @return string Text to be placed inside the column <td> 
      **************************************************************************/
     function column_comment_content($item){
-        $nonce = wp_create_nonce('delete-comment_' . $item['ID']);
-		
-        //Build row actions
-        $actions = array(
-            'edit'      => sprintf('<a href="'. $item['blog_url']. '/wp-admin/comment.php?action=%s&c=%s">Edit</a>','editcomment',$item['ID']),
-            'delete'    => sprintf('<a href="'. $item['blog_url']. '/wp-admin/comment.php?c=%s&action=%s&_wpnonce=%s">Trash</a>',$item['ID'],'trashcomment', $nonce),
-        );
-        
-        //Return the title contents
-		if(current_user_can_for_blog($item['blog_id'], 'moderate_comments')){
-			if(strlen($item['comment_content']) > 50){
-				return sprintf('%1$s %2$s',
-				/*$1%s*/ substr($item['comment_content'],0,50)."...",
-				/*$2%s*/ $this->row_actions($actions)
-				);
-			}
-			if(strlen($item['column_content'])<50){
-				return sprintf('%1$s %2$s',
-				/*$1%s*/ $item['comment_content'],
-				/*$2%s*/ $this->row_actions($actions)
-				);
-			}
-		}
-		else{
+
 			if(strlen($item['comment_content']) > 50){
 				return substr($item['comment_content'],0,50)."...";
 			}
@@ -232,7 +209,6 @@ class Comment_List_Table extends WP_List_Table
 				return $item['comment_content'];
 			}
 		}
-	}
     /**
      * Define what data to show on each column of the table
      *
