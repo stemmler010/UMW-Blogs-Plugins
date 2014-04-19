@@ -1,4 +1,3 @@
-<meta http-equiv="refresh" content="300">
 <?php
 /*
  * Plugin Name: Comments I've Made
@@ -45,14 +44,14 @@ class Comments_List_Table
 }
 
 // WP_List_Table is not loaded automatically so we need to load it in our application
-if( ! class_exists( 'WP_List_Table' ) ) {
-    require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
+if( ! class_exists( 'comment_WP_List_Table' ) ) {
+    require_once( ABSPATH . 'wp-content/plugins/comment-class-wp-list-table.php');
 }
 
 /**
  * Create a new table class that will extend the WP_List_Table
  */
-class Comment_List_Table extends WP_List_Table
+class Comment_List_Table extends comment_WP_List_Table
 {
     /**
      * Prepare the items for the table to process

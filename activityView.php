@@ -41,14 +41,14 @@ class Activities_View_Table
 }
 
 // WP_List_Table is not loaded automatically so we need to load it in our application
-if( ! class_exists( 'WP_List_Table' ) ) {
-    require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
+if( ! class_exists( 'activity_WP_List_Table' ) ) {
+    require_once( ABSPATH . 'wp-content/plugins/activity-class-wp-list-table.php' );
 }
 
 /**
  * Create a new table class that will extend the WP_List_Table
  */
-class Activity_View_Table extends WP_List_Table
+class Activity_View_Table extends activity_WP_List_Table
 {
     /**
      * Prepare the items for the table to process
